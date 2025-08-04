@@ -177,6 +177,7 @@ The MCP server provides the following tools for interacting with Figma:
 ### Export & Advanced
 
 - `export_node_as_image` - Export a node as an image (PNG, JPG, SVG, or PDF) - limited support on image currently returning base64 as text
+- `capture_figma_design` - Capture a Figma design from a URL and return it as an image (PNG, JPG, SVG, or PDF)
 
 ### Connection Management
 
@@ -204,6 +205,59 @@ The MCP server includes several helper prompts to guide you through complex desi
    ```
 
 2. Edit code.js and ui.html
+
+## Figma URL Capture Feature
+
+The `capture_figma_design` tool allows you to capture Figma designs directly from URLs without needing to be connected to Figma. This is useful for:
+
+- Capturing designs for documentation
+- Creating design snapshots for presentations
+- Archiving design versions
+- Sharing design previews
+
+### Usage Example
+
+```typescript
+// Basic capture
+capture_figma_design({
+  url: "https://www.figma.com/file/abc123/My-Design",
+  format: "PNG",
+  scale: 1,
+});
+
+// Capture specific node with custom settings
+capture_figma_design({
+  url: "https://www.figma.com/file/abc123/My-Design?node-id=123%3A456",
+  format: "JPG",
+  scale: 2,
+  quality: 95,
+  width: 1920,
+  height: 1080,
+  fullPage: false,
+});
+```
+
+### Parameters
+
+- `url` (required): Valid Figma or FigJam URL
+- `nodeId` (optional): Specific node ID to capture
+- `format` (optional): Export format (PNG, JPG, SVG, PDF) - default: PNG
+- `scale` (optional): Capture scale factor (0.1-4) - default: 1
+- `quality` (optional): Image quality for JPG (1-100) - default: 90
+- `width` (optional): Viewport width
+- `height` (optional): Viewport height
+- `waitForSelector` (optional): CSS selector to wait for before capturing
+- `waitForTimeout` (optional): Time to wait in milliseconds - default: 2000
+- `fullPage` (optional): Whether to capture the full page - default: false
+- `clip` (optional): Clip area to capture (x, y, width, height)
+
+### Features
+
+- **Automatic URL parsing**: Extracts file key and node ID from Figma URLs
+- **Flexible capture options**: Support for different formats, scales, and quality settings
+- **Smart waiting**: Waits for Figma to load before capturing
+- **Error handling**: Comprehensive error messages for debugging
+- **Metadata**: Returns capture metadata including URL, format, and timestamp
 
 ## Best Practices
 
