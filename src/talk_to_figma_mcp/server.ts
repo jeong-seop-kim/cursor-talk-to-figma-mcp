@@ -6,6 +6,7 @@ import { v4 as uuidv4 } from "uuid";
 import WebSocket from "ws";
 import { z } from "zod";
 import { figmaCapture, FigmaCaptureParams } from "./figma_capture.js";
+import { imageComparison, ImageComparisonParams } from "./image_comparison.js";
 import { webCapture, WebCaptureParams } from "./web_capture.js";
 
 // Define TypeScript interfaces for Figma responses
@@ -2811,7 +2812,8 @@ type FigmaCommand =
   | "set_default_connector"
   | "create_connections"
   | "capture_figma_design"
-  | "capture_web_page";
+  | "capture_web_page"
+  | "compare_images";
 
 type CommandParams = {
   get_document_info: Record<string, never>;
@@ -2994,6 +2996,12 @@ type CommandParams = {
       | "domcontentloaded"
       | "networkidle0"
       | "networkidle2";
+  };
+  compare_images: {
+    image1Path: string;
+    image2Path: string;
+    threshold?: number;
+    outputPath?: string;
   };
 };
 
@@ -3504,6 +3512,70 @@ server.tool(
           {
             type: "text",
             text: `Error joining channel: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+          },
+        ],
+      };
+    }
+  }
+);
+
+// Image Comparison Tool
+server.tool(
+  "compare_images",
+  "두 이미지 파일을 픽셀 단위로 비교하여 차이점을 찾습니다",
+  {
+    image1Path: z.string().describe("첫 번째 이미지 파일 경로"),
+    image2Path: z.string().describe("두 번째 이미지 파일 경로"),
+    threshold: z
+      .number()
+      .min(0)
+      .max(1)
+      .optional()
+      .default(0.1)
+      .describe("차이 감지 임계값 (0-1)"),
+    outputPath: z.string().optional().describe("차이점 이미지 출력 경로"),
+  },
+  async ({ image1Path, image2Path, threshold, outputPath }: any) => {
+    try {
+      const comparisonParams: ImageComparisonParams = {
+        image1Path,
+        image2Path,
+        threshold,
+        outputPath,
+      };
+
+      const result = await imageComparison.compareImages(comparisonParams);
+      const description = imageComparison.generateDifferenceDescription(result);
+
+      return {
+        content: [
+          {
+            type: "image",
+            data: result.diffImageData,
+            mimeType: "image/png",
+          },
+          {
+            type: "text",
+            text: description,
+          },
+          {
+            type: "text",
+            text: `\n### 📋 상세 메타데이터\n\`\`\`json\n${JSON.stringify(
+              result.metadata,
+              null,
+              2
+            )}\n\`\`\``,
+          },
+        ],
+      };
+    } catch (error) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: `이미지 비교 오류: ${
               error instanceof Error ? error.message : String(error)
             }`,
           },
